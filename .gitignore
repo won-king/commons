@@ -1,8 +1,7 @@
 # Compiled class file
 *.class
-*/target/
-*/bin/*
-*/bin/
+target/
+bin/
 .git/
 
 # IntelliJ IDEA
