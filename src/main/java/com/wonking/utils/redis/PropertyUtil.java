@@ -5,6 +5,15 @@ package com.wonking.utils.redis;
  */
 public class PropertyUtil {
 
+    public static int getIntOrDefault(String s, int def){
+        try{
+            return Integer.parseInt(s);
+        }catch (Exception e){
+            //ignore
+        }
+        return def;
+    }
+
     public static int getIntOrDefault(Integer i, int def){
         return i!=null? i:def;
     }

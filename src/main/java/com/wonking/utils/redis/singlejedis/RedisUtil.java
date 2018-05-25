@@ -1,6 +1,7 @@
 package com.wonking.utils.redis.singlejedis;
 
 import com.wonking.utils.redis.PropertyUtil;
+import com.wonking.utils.redis.RedisConfig;
 import com.wonking.utils.redis.RedisExecutor;
 import com.wonking.utils.thread.ThreadUtil;
 import redis.clients.jedis.Jedis;
@@ -34,21 +35,20 @@ public class RedisUtil {
 
     static {
         //这里不能加.properties后缀，resourceBundle默认的文件后缀是且仅是这一个，所以不需要加，加了反而会找不到
-        ResourceBundle resource=ResourceBundle.getBundle("vars/redis");
+        /*ResourceBundle resource=ResourceBundle.getBundle("vars/redis");
 
         config=new JedisPoolConfig();
         config.setMaxIdle(PropertyUtil.getIntOrDefault(Integer.parseInt(resource.getString("redis.maxIdle")), JedisPoolConfig.DEFAULT_MAX_IDLE));
         config.setMaxTotal(PropertyUtil.getIntOrDefault(Integer.parseInt(resource.getString("redis.maxTotal")), JedisPoolConfig.DEFAULT_MAX_TOTAL));
         config.setMaxWaitMillis(PropertyUtil.getLongOrDefault(Long.parseLong(resource.getString("redis.maxWaitTime")), JedisPoolConfig.DEFAULT_MAX_WAIT_MILLIS));
-        //config.setMinIdle();
         config.setBlockWhenExhausted(false);
         config.setTestOnBorrow(false);
         config.setTestOnCreate(false);
         config.setTestOnReturn(false);
         config.setTestWhileIdle(false);
         String url=resource.getString("redis.url");
-        int port=Integer.parseInt(resource.getString("redis.port"));
-        jedisPool=new JedisPool(config, url, port);
+        int port=Integer.parseInt(resource.getString("redis.port"));*/
+        jedisPool=new JedisPool(RedisConfig.getConfig(), RedisConfig.getHost(), RedisConfig.getPort());
     }
 
     private RedisUtil(){
@@ -89,7 +89,6 @@ public class RedisUtil {
                 jedis.close();
             }
         }
-
     }
 
     //data structure--string begin
@@ -125,7 +124,7 @@ public class RedisUtil {
     }
 
     public static void main(String[] args) {
-        ThreadUtil executor=ThreadUtil.getFixedExecutor(20);
+        /*ThreadUtil executor=ThreadUtil.getFixedExecutor(20);
         for(int i=0;i<5;++i){
             final int j=i;
             executor.submitTask(()->instance.set("key"+j, "value"+j));
@@ -133,17 +132,17 @@ public class RedisUtil {
         for(int i=0;i<5;++i){
             final int j=i;
             executor.submitTask(()-> System.out.println("key"+j+"->"+instance.get("key"+j)));
-        }
-        for(int i=0;i<5;++i){
+        }*/
+        /*for(int i=0;i<5;++i){
             final int j=i;
             executor.submitTask(()->instance.expire("key"+j, 1));
-        }
-        ThreadUtil.sleep(1);
+        }*/
+        /*ThreadUtil.sleep(1);
         for(int i=0;i<5;++i){
             final int j=i;
             executor.submitTask(()-> System.out.println("key"+j+" exists->"+instance.exists("key"+j)));
         }
-        executor.shutdown();
+        executor.shutdown();*/
     }
 
 }
