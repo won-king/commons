@@ -44,12 +44,10 @@ public class DistributedLock {
     private static ShardedRedisUtil redis=ShardedRedisUtil.getRedis();
     private static ThreadLocal<String> lock=new ThreadLocal<>();
 
-    //这里的timeout是key的过期时间，而不是获取锁的超时时间
-    public static boolean tryLock(String key, String value, int timeout){
-        return LOCK_SUCCESS.equals(redis.set(key,value, SET_NOT_EXISTS, SET_WITH_EXPIRE_TIME, timeout));
+    //这里的expire是key的过期时间
+    public static boolean tryLock(String key, String value, int expire){
+        return LOCK_SUCCESS.equals(redis.set(key,value, SET_NOT_EXISTS, SET_WITH_EXPIRE_TIME, expire));
     }
-
-    //
 
     /**
      * 带超时时间的锁操作,是指尝试获取锁操作的最长时间
@@ -90,6 +88,25 @@ public class DistributedLock {
         return RELEASE_SUCCESS_CODE.equals(redis.setnx(key, value, timeout));
     }
 
+    //采用lua脚本执行删除操作，首先获取锁对应的value值，检查是否与传入value相等，如果相等则删除锁（解锁），否则do nothing
+    //redis是一个单进程，单线程的服务，它内部采用队列来将并发操作转化为顺序操作
+    //lua操作可以保证删除操作的原子性，整段lua代码将被当成一个命令去执行，并且直到eval命令执行完成，Redis才会执行其他命令
+    //非原子性的场景是，当判断完内存值和给定值相等后，下一步准备执行del命令
+    //但是此时key突然失效了，并且被另一个用户获取了，那么此时del命令就是非法的
+
+    //释放锁操作要保证的是redis服务端执行的原子性，而不是客户端的原子性
+    //如果你仅仅保证了自己编写的客户端操作的原子性(比如说在方法上加上synchronized限制)，那是不够的
+    //因为不可能所有客户端都使用了你编写的API，而其他使用了非原子性API的客户端并发调用下可能破坏你的原子性
+    //事实上，即使所有的客户端都使用你编写的API，但它们是分布式部署的，不同进程的客户端相互之间也会破坏原子性
+    //假设这样一个场景，两个使用了你编写的API的客户端，分别部署在两台机器A,B上
+    //其中A在执行解锁操作，此时判断到内存值与给定值相等，接下来执行del命令
+    //对于进程A中的多个子线程来说，他们相互之间的解锁操作当然是互不干扰的(synchronized保证了这一点)
+    //但是进程B里面的操作是自由的，假设key此时失效，并被进程B中的一个线程获取到了
+    //此时进程A中的del命令就是非法的，key已经不属于它了
+    //综上，只能保证redis服务端的释放原子性，而不能保证客户端的原子性
+    //这里我们采用的是eval命令的方式，还有一种方式是，使用redis自带的Transaction来保证原子性
+    //其他的实现得非常复杂的方式就不建议使用了，比如说释放锁的时候，再引入另一个锁来保证release操作的原子性，
+    //但上述问题会无限递归存在下去，仍然问题重重
     public static boolean releaseLock(String key, String value){
         Long code=redis.eval(script, key, value);
         return RELEASE_SUCCESS_CODE.equals(code);
@@ -103,10 +120,10 @@ public class DistributedLock {
             //这里的lock success和release success的次数不相等的测试结果是正确的
             //因为他锁定了5次，不代表就一定要成功释放5次
             //可能某一次release操作是在lock之前，那么就无key可释放，自然release失败
-            //但存在一个关系，release成功次数 <= lock成功次数
+            //但存在一个定性关系，release成功次数 <= lock成功次数
             //因为你不可能都没锁成功就释放成功了
             thread.submitTask(new Task(key,value));
-            //thread.submitTask(new ReleaseTask(key, value));
+            thread.submitTask(new ReleaseTask(key, value));
         }
         thread.shutdown();
     }
@@ -126,7 +143,7 @@ public class DistributedLock {
 
         @Override
         public void run() {
-            if(tryLock(key,value, 1)){
+            if(tryLock(key,value, 60)){
             //if(tryLockWithTimeout(key, value, 1, 2)){
             //if(tryLockWithRetryTime(key, value, 1, 5)){
                 System.out.println(name+" lock success");
