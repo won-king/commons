@@ -1,14 +1,9 @@
 package com.wonking.utils.redis.singlejedis;
 
-import com.wonking.utils.redis.PropertyUtil;
 import com.wonking.utils.redis.RedisConfig;
-import com.wonking.utils.redis.RedisExecutor;
-import com.wonking.utils.thread.ThreadUtil;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-
-import java.util.ResourceBundle;
 
 /**
  * Created by wangke18 on 2018/5/18.

@@ -5,7 +5,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * long may spring!
@@ -22,6 +22,18 @@ public class App {
     }
 
     public static void main( String[] args ) {
+        List<Integer> numbers=new ArrayList<>();
+        for(int i=0;i<50;++i){
+            numbers.add(i);
+        }
+        int sum= numbers.stream().reduce(0,(t,s)->t+s);
+        Optional<Integer> o=numbers.stream().reduce(Integer::sum);
+        int sum1=o.isPresent()?o.get():0;
+        System.out.println("sum->"+sum);
+        System.out.println("sum1->"+sum1);
+    }
+
+    private static void testSpring(){
         ClassPathXmlApplicationContext context=new ClassPathXmlApplicationContext("classpath:spring-context.xml");
         App app= (App) context.getBean("app");
         System.out.println("url is "+app.getUrl());

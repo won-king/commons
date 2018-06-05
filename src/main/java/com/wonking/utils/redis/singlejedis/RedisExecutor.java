@@ -1,4 +1,4 @@
-package com.wonking.utils.redis;
+package com.wonking.utils.redis.singlejedis;
 
 import redis.clients.jedis.Jedis;
 

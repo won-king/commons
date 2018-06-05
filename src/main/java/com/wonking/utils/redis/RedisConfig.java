@@ -1,11 +1,11 @@
 package com.wonking.utils.redis;
 
+import com.wonking.utils.collection.Tuple;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisShardInfo;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 /**
  * Created by wangke18 on 2018/5/18.
@@ -46,16 +46,40 @@ public class RedisConfig {
     }
 
     public static List<JedisShardInfo> getShardedInfo(){
+        List<JedisShardInfo> result=new ArrayList<>();
+        List<Tuple<String,Integer>> hosts=getHostPort();
+        int timeout=getTimeOut();
+        hosts.forEach(t -> result.add(new JedisShardInfo(t.f, t.s, timeout)));
+        return result;
+    }
+
+    public static HostAndPort getCluster(){
+        Tuple<String,Integer> tuple=getHostPort().get(0);
+        return new HostAndPort(tuple.f, tuple.s);
+    }
+
+    public static Set<HostAndPort> getClusters(){
+        Set<HostAndPort> result=new HashSet<>();
+        List<Tuple<String,Integer>> tuples=getHostPort();
+        tuples.forEach(t -> result.add(new HostAndPort(t.f, t.s)));
+        return result;
+    }
+
+    public static int getTimeOut(){
+        return PropertyUtil.getIntOrDefault(resource.getString("redis.timeout"), DEFAULT_TIME_OUT);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Tuple<String,Integer>> getHostPort(){
         String url=resource.getString("redis.url");
         String[] urls=url.split(";");
-        List<JedisShardInfo> result=new ArrayList<>();
-        int timeout=PropertyUtil.getIntOrDefault(resource.getString("redis.timeout"), DEFAULT_TIME_OUT);
+        List<Tuple<String,Integer>> result=new ArrayList<>();
         for(String s:urls){
             if(s.contains(":")){
                 String[] tmp=s.trim().split(":");
-                result.add(new JedisShardInfo(tmp[0], Integer.parseInt(tmp[1]), timeout));
+                result.add(Tuple.tuple(tmp[0], Integer.parseInt(tmp[1])));
             }else {
-                result.add(new JedisShardInfo(s, DEFAULT_PORT, timeout));
+                result.add(Tuple.tuple(s, DEFAULT_PORT));
             }
         }
         return result;

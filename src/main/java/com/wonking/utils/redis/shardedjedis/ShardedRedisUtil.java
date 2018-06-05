@@ -7,6 +7,8 @@ import redis.clients.jedis.JedisShardInfo;
 import redis.clients.jedis.ShardedJedis;
 import redis.clients.jedis.ShardedJedisPool;
 
+import java.util.Collections;
+
 /**
  * Created by wangke18 on 2018/5/18.
  */
@@ -16,6 +18,10 @@ public class ShardedRedisUtil {
 
     static {
         jedisPool=new ShardedJedisPool(RedisConfig.getConfig(),RedisConfig.getShardedInfo());
+    }
+
+    public static ShardedRedisUtil getRedis(){
+        return instance;
     }
 
     private ShardedRedisUtil(){}
@@ -42,8 +48,36 @@ public class ShardedRedisUtil {
         System.out.println("timeout->"+info.getSoTimeout());
     }
 
+    /**
+     * 最新的set api，作为替代setnx的一种存值方法
+     * @param key 键
+     * @param value 值
+     * @param notExists 存值的策略命令， NX代表不存在的时候写，XX代表存在的情况下才写，仅有两种取值
+     * @param expire 过期时间单位， PX-milliseconds，EX-seconds
+     * @param expireTime 过期时间
+     * @return
+     */
+    public String set(String key, String value, String notExists, String expire, int expireTime){
+        return execute(jedis -> jedis.set(key, value, notExists, expire, expireTime));
+    }
+
     public String set(String key, String value){
         return execute(jedis -> jedis.set(key, value));
+    }
+
+    /**
+     *
+     * @param key
+     * @param value
+     * @param timeout 超时时间-s
+     * @return 成功返回1，失败返回0
+     */
+    public Long setnx(String key,String value, int timeout){
+        return execute(jedis -> {Long l=jedis.setnx(key, value);
+        if(l==1){
+            jedis.expire(key,timeout);
+        }
+        return l;});
     }
 
     public String get(String key){
@@ -63,8 +97,13 @@ public class ShardedRedisUtil {
         return execute(jedis -> jedis.expire(key, time));
     }
 
+    public Long eval(String script, String key, String value){
+        Jedis redis=getInstance().getShard(key);
+        return (Long) redis.eval(script, Collections.singletonList(key), Collections.singletonList(value));
+    }
+
     public static void main(String[] args) {
-        String key="key";
+        /*String key="key";
         for(int i=0;i<5;++i){
             instance.testSharded(key+i);
         }
@@ -81,7 +120,7 @@ public class ShardedRedisUtil {
             final int j=i;
             executor.submitTask(()-> System.out.println(key+j+" exists->"+instance.exists(key+j)));
         }
-        executor.shutdown();
+        executor.shutdown();*/
     }
 
 }
