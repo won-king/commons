@@ -73,11 +73,7 @@ public class ShardedRedisUtil {
      * @return 成功返回1，失败返回0
      */
     public Long setnx(String key,String value, int timeout){
-        return execute(jedis -> {Long l=jedis.setnx(key, value);
-        if(l==1){
-            jedis.expire(key,timeout);
-        }
-        return l;});
+        return execute(jedis -> jedis.setnx(key, value)==1 ? jedis.expire(key, timeout):0);
     }
 
     public String get(String key){
