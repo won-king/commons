@@ -3,6 +3,7 @@ package com.wonking.utils.redis;
 import com.wonking.utils.redis.shardedjedis.ShardedRedisUtil;
 import com.wonking.utils.thread.ThreadUtil;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -113,19 +114,81 @@ public class DistributedLock {
     }
 
     public static void main(String[] args) {
-        ThreadUtil thread=ThreadUtil.getFixedExecutor(20);
+        ThreadUtil thread=ThreadUtil.getFixedExecutor(50);
         String key="wonking";
         String value="001";
-        for(int i=0;i<10;++i){
+        for(int i=0;i<50;++i){
             //这里的lock success和release success的次数不相等的测试结果是正确的
             //因为他锁定了5次，不代表就一定要成功释放5次
             //可能某一次release操作是在lock之前，那么就无key可释放，自然release失败
             //但存在一个定性关系，release成功次数 <= lock成功次数
             //因为你不可能都没锁成功就释放成功了
-            thread.submitTask(new Task(key,value));
-            thread.submitTask(new ReleaseTask(key, value));
+            //thread.submitTask(new Task(key,value));
+            //thread.submitTask(new ReleaseTask(key, value));
+            thread.submitTask(new MiaoshaTask("P1021450148", UUID.randomUUID().toString()));
         }
         thread.shutdown();
+        //System.out.println("商品已卖出"+redis.get("P1021450148"+"-counter")+"件");
+        redis.del("P1021450148"+"-counter");
+    }
+
+    //简单的秒杀系统实现，基于锁机制
+    //锁的key是商品的商品编号，value是UUID
+    //另用一个key用来存储该秒杀商品的剩余量(或秒杀量)
+    //注：这里不应该考虑
+    static class MiaoshaTask implements Runnable{
+        private String batchNo;
+        private String value;
+        private int number;
+        private String name;
+        private static AtomicInteger count =new AtomicInteger(0);
+
+        public MiaoshaTask(String batchNo, String value){
+            this.batchNo=batchNo;
+            this.value=value;
+            number=count.incrementAndGet();
+            name="miaomiao"+number;
+        }
+
+        @Override
+        public void run() {
+            try{
+                //亲自实现一个秒杀系统的时候，才发现，秒杀系统分为多种类型，不同类型对前端的玩法要求不同
+                //技术上主要有两种：基于锁机制的实现，基于请求队列的实现
+                //一.佛系类型，对应于下面的tryLock实现，前端点击一次，后台也只发出一次秒杀请求，不保证成功
+                //   实践证明这种一次秒杀成功的几率非常低，前端要想秒杀成功，必须连续快速发出多次请求(拼手速)
+                //   可以想象，这种对应于生活中的野蛮式抢购的场景，大家都不排队，一哄而上，能抢到就抢，抢不到就再上
+                //二.尽最大努力交付型，对应于tryLockWithTimeout方式
+                //   佛系方式的一种改进，前端只请求一次，后台尽最大努力执行秒杀动作(除非商品被秒完，或者超时)。
+                //   这种并没有改变秒杀方式野蛮的本质，大家还是一哄而上，只不过你上一次，可以进行多次秒杀请求了
+                //   能不能抢到还是看运气，比你后来的，可能比你先抢到
+                //三.文明公平型。采用请求入队列的方式，只有队列前N名可能抢到(如果中间有出现故障的，可以后面补位)
+                //   这种方式底层的实现原理和以上两种是截然不同的，一种是采用锁机制，一种是采用队列
+                //   这种方式的特点是，先到先得，秒杀动作有序进行，秒杀成功率与请求次数无关，只与网速有关
+                //   FIFO队列保证了秒杀最大程度的公平性和有序性
+                // 注：此简易版本没有考虑对用户的多次秒杀进行去重，建议结合redis set数据结构来做
+                //if(tryLock(batchNo, value, 10)){
+                if(tryLockWithTimeout(batchNo, value, 10, 3)){
+                    String c=redis.get(batchNo+"-counter");
+                    if(c==null){
+                        redis.set(batchNo+"-counter", String.valueOf(1));
+                    }else {
+                        int i=Integer.parseInt(c);
+                        if(i>20){
+                            System.out.println(name+" 喔噢，你来晚了，下次请早哦");
+                            return;
+                        }
+                        redis.set(batchNo+"-counter", String.valueOf(i+1));
+                    }
+                    System.out.println(name+" 成功秒杀到商品"+batchNo+". 名次->"+c);
+                }else {
+                    System.out.println(name+" 秒杀失败");
+                }
+            }finally {
+                releaseLock(batchNo, value);
+            }
+
+        }
     }
 
     static class Task implements Runnable{
