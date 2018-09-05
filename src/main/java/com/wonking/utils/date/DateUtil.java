@@ -36,6 +36,10 @@ public class DateUtil {
     private DateUtil() {
     }
 
+    public static String getHour(int offset){
+        return dateToStr(addHours(new Date(), offset));
+    }
+
     public static String getStringDate(String parttern) {
         return dateToStr(new Date(),parttern);
     }
