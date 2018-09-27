@@ -21,7 +21,7 @@ public class LeakyClient implements Runnable {
     public void run() {
         while (true){
             limiter.addInvokes(invocation);
-            ThreadUtil.sleep(ThreadLocalRandom.current().nextInt(20));
+            ThreadUtil.sleep(ThreadLocalRandom.current().nextInt(10));
         }
     }
 }

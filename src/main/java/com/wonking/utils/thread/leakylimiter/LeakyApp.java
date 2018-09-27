@@ -7,10 +7,10 @@ import java.util.concurrent.*;
  */
 public class LeakyApp {
     public static void main(String[] args) {
-        //ExecutorService executorService=Executors.newFixedThreadPool(1);
         ScheduledExecutorService service= Executors.newScheduledThreadPool(1);
         LeakyLimiter limiter=new LeakyLimiter();
-        service.scheduleAtFixedRate(limiter, 0, 1, LeakyLimiter.LEAK_RATE_TIMEUNIT);
+        service.scheduleAtFixedRate(limiter, 0,
+                LeakyLimiter.TICK_OF_NANOS, TimeUnit.NANOSECONDS);
         new Thread(limiter).start();
         for(int i=0;i<10;++i){
             new Thread(new LeakyClient(limiter)).start();
