@@ -40,6 +40,10 @@ public class LeakyLimiter implements Runnable{
         System.out.println("bucket size->"+blockingQueue.size());
     }
 
+    public int remainingInvokes(){
+        return blockingQueue.size();
+    }
+
     //这里并不是简单的处理10次(不管实际上有没有poll出来一个请求)就行了，
     //而是要在一个tick时间内不断循环，直到tick结束
     //如果tick还未结束，滴出的请求已经超过最大速率，则进行空转直到tick结束

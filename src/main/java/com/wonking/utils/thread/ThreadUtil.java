@@ -34,6 +34,9 @@ public class ThreadUtil {
     public void shutdown() {
         executor.shutdown();
     }
+    public void shutdownNow(){
+        executor.shutdownNow();
+    }
 
     public static void sleep(int second) {
         try {
