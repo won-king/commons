@@ -30,7 +30,7 @@ public class LeakyLimiter implements Runnable{
     //这说明LinkedList数据结构不适用于并发数据结构，所以改用下面的ConcurrentLinkedQueue
     private volatile LinkedList<Invocation> invocations=new LinkedList<>();
     private volatile ConcurrentLinkedQueue<Invocation> queue=new ConcurrentLinkedQueue<>();
-    private volatile BlockingQueue<Invocation> blockingQueue=new LinkedBlockingQueue<>(BUCKET_SIZE);
+    private BlockingQueue<Invocation> blockingQueue=new LinkedBlockingQueue<>(BUCKET_SIZE);
 
     @Override
     public void run() {

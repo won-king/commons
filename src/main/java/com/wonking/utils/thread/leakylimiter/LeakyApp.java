@@ -19,10 +19,11 @@ public class LeakyApp {
         for(int i=0;i<taskNum;++i){
             threadUtil.submitTask(new LeakyClient(limiter, i));
         }
-        ThreadUtil.sleep(5);
-        threadUtil.shutdownNow();
-        service.shutdown();
-        System.out.println("stop successfully");
-        System.out.println("remaining request->"+limiter.remainingInvokes());
+        //ArrayBlockingQueue
+        //ThreadUtil.sleep(5);
+        //threadUtil.shutdownNow();
+        //service.shutdown();
+        //System.out.println("stop successfully");
+        //System.out.println("remaining request->"+limiter.remainingInvokes());
     }
 }

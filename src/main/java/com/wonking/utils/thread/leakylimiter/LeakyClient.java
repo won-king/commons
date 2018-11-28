@@ -31,7 +31,7 @@ public class LeakyClient implements Runnable {
             }
             limiter.addInvokes(invocation);
             try {
-                TimeUnit.SECONDS.sleep(ThreadLocalRandom.current().nextInt(2));
+                TimeUnit.SECONDS.sleep(ThreadLocalRandom.current().nextInt(10));
             } catch (InterruptedException e) {
                 System.out.println("睡眠中断");
                 break;
