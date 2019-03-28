@@ -27,7 +27,7 @@ public class StatusReporter implements Runnable {
                     System.out.println(obj.isSignal()==true);
                 }
                 ThreadLocalRandom random=ThreadLocalRandom.current();
-                TimeUnit.SECONDS.sleep(random.nextInt(5));
+                TimeUnit.SECONDS.sleep(random.nextInt(1));
             }
         }catch (InterruptedException e){
             //ignore

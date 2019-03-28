@@ -24,7 +24,7 @@ public class SignOffTask implements Runnable{
                 }
                 FuzzyObj.instance().signOff();
                 ThreadLocalRandom random=ThreadLocalRandom.current();
-                TimeUnit.MILLISECONDS.sleep(random.nextInt(5));
+                TimeUnit.MILLISECONDS.sleep(random.nextInt(0));
             }
         }catch (InterruptedException e){
             //ignore

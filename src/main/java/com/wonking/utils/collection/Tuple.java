@@ -12,7 +12,7 @@ public class Tuple<F,S> {
         this.s=s;
     }
 
-    public static <F,S> Tuple tuple(F f, S s){
+    public static <F,S> Tuple<F,S> tuple(F f, S s){
         return new Tuple<>(f,s);
     }
 }
